@@ -1,0 +1,4 @@
+## Append samples of your project ##
+resources:
+- observability_v1alpha1_observabilitygateway.yaml
+# +kubebuilder:scaffold:manifestskustomizesamples
