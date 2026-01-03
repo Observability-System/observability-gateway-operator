@@ -34,18 +34,21 @@ No more manual Deployments per tier — just declare the desired state, and the 
 ## Quick Install (for users)
 To get started, install the `ObservabilityGateway` Custom Resource Definition (CRD) and the Operator that manages it.
 1. Install the CRD
+
     This registers the `ObservabilityGateway` resource type in your cluster:
     ```bash
     kubectl apply -f https://raw.githubusercontent.com/alexandrosst/observability-gateway-operator/main/config/crd/bases/observability.x-k8s.io_observabilitygateways.yaml
     ```
 
 2. Install the Operator
+
     This deploys the controller that reconciles `ObservabilityGateway` resources:
     ```bash
-    kubectl apply -f github.com/alexandrosst/observability-gateway-operator/blob/main/config/crd/bases/observability.x-k8s.io_observabilitygateways.yaml
+    kubectl apply -k github.com/alexandrosst/observability-gateway-operator/config/default
     ```
 
 3. Verify the installation
+
     Once applied, confirm that the operator is running:
     ```bash
     kubectl get pods -n observability-system

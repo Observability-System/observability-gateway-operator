@@ -7,7 +7,7 @@ namespace: observability-system
 images:
 - name: controller
   newName: alexandrosst/observability-gateway-operator
-  newTag: v0.1.0  # Change to whatever tag you pushed (or 'latest' for testing)
+  newTag: latest
 
 labels:
 - pairs:
