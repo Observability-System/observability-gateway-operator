@@ -113,6 +113,12 @@ func (r *ObservabilityGatewayReconciler) reconcileDeployment(ctx context.Context
 			Template: corev1.PodTemplateSpec{
 				ObjectMeta: metav1.ObjectMeta{
 					Labels: map[string]string{"app": dep.Name},
+					Annotations: map[string]string{
+						"prometheus.io/scrape": "true",
+						"prometheus.io/port":   "8888",
+						"prometheus.io/path":   "/metrics",
+						"prometheus.io/scheme": "http",
+					},
 				},
 				Spec: corev1.PodSpec{
 					Containers: []corev1.Container{
@@ -142,6 +148,12 @@ func (r *ObservabilityGatewayReconciler) reconcileDeployment(ctx context.Context
 					Affinity:     affinity,
 				},
 			},
+		}
+
+		if class.PodAnnotations != nil {
+			for k, v := range class.PodAnnotations {
+				dep.Spec.Template.ObjectMeta.Annotations[k] = v
+			}
 		}
 
 		return controllerutil.SetControllerReference(gw, dep, r.Scheme)

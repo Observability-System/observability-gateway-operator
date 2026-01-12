@@ -14,14 +14,15 @@ type ObservabilityGatewaySpec struct {
 }
 
 type GatewayClass struct {
-	Name         string                       `json:"name"`
-	Replicas     int32                        `json:"replicas"`
-	Resources    *corev1.ResourceRequirements `json:"resources,omitempty"`
-	NodeSelector map[string]string            `json:"nodeSelector,omitempty"`
-	Tolerations  []corev1.Toleration          `json:"tolerations,omitempty"`
-	Affinity     *corev1.Affinity             `json:"affinity,omitempty"`
-	ExtraArgs    []string                     `json:"extraArgs,omitempty"`
-	Ports        []corev1.ContainerPort       `json:"ports,omitempty"`
+	Name           string                       `json:"name"`
+	Replicas       int32                        `json:"replicas"`
+	Resources      *corev1.ResourceRequirements `json:"resources,omitempty"`
+	NodeSelector   map[string]string            `json:"nodeSelector,omitempty"`
+	Tolerations    []corev1.Toleration          `json:"tolerations,omitempty"`
+	Affinity       *corev1.Affinity             `json:"affinity,omitempty"`
+	ExtraArgs      []string                     `json:"extraArgs,omitempty"`
+	Ports          []corev1.ContainerPort       `json:"ports,omitempty"`
+	PodAnnotations map[string]string            `json:"podAnnotations,omitempty"`
 }
 
 // ObservabilityGatewayStatus defines the observed state of ObservabilityGateway.

@@ -41,14 +41,14 @@ To get started, install the `ObservabilityGateway` Custom Resource Definition (C
 
     This registers the `ObservabilityGateway` resource type in your cluster:
     ```bash
-    kubectl apply -f https://raw.githubusercontent.com/alexandrosst/observability-gateway-operator/main/config/crd/bases/observability.x-k8s.io_observabilitygateways.yaml
+    kubectl apply -f https://raw.githubusercontent.com/Observability-System/Observability-Gateway-Operator/main/config/crd/bases/observability.x-k8s.io_observabilitygateways.yaml
     ```
 
 2. Install the Operator
 
     This deploys the controller that reconciles `ObservabilityGateway` resources:
     ```bash
-    kubectl apply -k github.com/alexandrosst/observability-gateway-operator/config/default
+    kubectl apply -k https://github.com/Observability-System/Observability-Gateway-Operator/config/default
     ```
 
 3. Verify the installation
