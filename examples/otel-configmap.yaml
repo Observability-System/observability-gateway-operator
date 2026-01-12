@@ -7,7 +7,7 @@ data:
   config.yaml: |
     extensions:
       weightupdate:
-        port: 4500  # Your API port
+        port: 4500  # API port
 
     receivers:
       otlp:
@@ -25,7 +25,7 @@ data:
           src2: 0.3
           src3: 0.1
         poll_interval_ms: 200                  # How often to check queues and forward (ms)
-        max_total_capacity: 8               # Max total items in all queues
+        max_total_capacity: 8                  # Max total items in all queues
 
       batch:                                   # Always good to batch before exporting
         send_batch_size: 1000
@@ -38,10 +38,19 @@ data:
         sampling_thereafter: 200               # Then every 200th
 
     service:
+      telemetry:
+        metrics:
+          readers:
+            - pull:
+                exporter:
+                  prometheus:
+                    host: "0.0.0.0"
+                    port: 8888
+                    
       extensions: [weightupdate]
 
       pipelines:
-        metrics:                               # Your main pipeline (metrics)
+        metrics:                               # Main pipeline (metrics)
           receivers: [otlp]
           processors: [weightedqueue, batch]
           exporters: [debug]

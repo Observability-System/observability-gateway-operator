@@ -1,101 +1,134 @@
 # Observability Gateway Operator
-This repository defines the `ObservabilityGateway` CRD and its Kubernetes operator, offering a declarative way to provision and manage multi‑class OpenTelemetry ingestion gateways with priority‑aware collectors.
+Kubernetes Operator for managing **class-based observability gateway deployments** with declarative lifecycle management.
+
+The operator automates the creation, update, and cleanup of OpenTelemetry gateway deployments based on a single custom resource. It is designed for environments where telemetry ingestion must be **structured**, **separated by class**, and **managed consistently over time**.
 
 <p align='center'>
     <img src="assets/Observability-Gateway-Operator-Icon.svg" alt="Observability Gateway Operator Logo" width="300">
 </p>
 
-## Description
-Modern observability systems often need to handle telemetry data with different levels of importance: critical traces and metrics should get low-latency, high-availability treatment, while bulk or debug data can be processed with fewer resources.
+## Conceptual Overview
+In many observability deployments, telemetry from different sources often needs to be handled differently depending on importance, volume, or service-level requirements. Common examples include:
+- critical vs best-effort telemetry
+- production vs development traffic
+- premium vs standard tenants
 
-This operator declares a single `ObservabilityGateway` custom resource that automatically provisions **separate collector tiers** (e.g., gold, silver, bronze) — each with its own:
-- Deployment (dedicated replica count and resources)
-- Service (independent endpoints)
-- Shared configuration from a ConfigMap
+The **Observability Gateway Operator** provides a **declarative Kubernetes API** that allows users to describe what *gateway classes should exist* and *how they should be provisioned*, while the operator ensures that the corresponding Kubernetes resources are continuously reconciled.
 
-Built for use with a custom priority-queue OpenTelemetry collector (`alexandrosst/prioqueue-collector`), it gives a declarative way to run a differentiated ingestion control plane.
+## Reconciliation Model
+For each declared gateway class, the operator manages:
+- One **Deployment** per priority class
+- One **Service** per priority class
+- Shared configuration references (ConfigMap)
+- Ownership via Kubernetes ownerReferences
 
-Perfect for:
-- Ensuring critical application telemetry gets priority processing
-- Isolating noisy or low-value data streams
-- Scaling ingestion independently per priority class
+The reconciliation loop ensures that:
+- declared classes always exist
+- removed classes are garbage-collected
+- replica counts are enforced
+- resources are recreated after failure
 
-No more manual Deployments per tier — just declare the desired state, and the operator keeps everything in sync.
+All managed resources are **fully owned** by the custom resource via Kubernetes owner references, ensuring automatic garbage collection and preventing orphaned objects.
 
-## Features
-- Single CR manages multiple priority classes
-- Automatic creation/deletion of per-class Deployments and Services
-- Default OTLP ports (4317/gRPC, 4318/HTTP, 8888/metrics)
-- Garbage collection when classes are removed
-- Full owner references for clean cleanup
+Reconciliation is triggered on creation, update, or deletion of an `ObservabilityGateway` resource, as well as when managed resources drift from the desired state.
 
-## Prerequisites
-- go version v1.24.6+
-- docker version 17.03+.
-- kubectl version v1.11.3+.
-- Access to a Kubernetes v1.11.3+ cluster.
+## Installation
+### Prerequisites
+- kubectl version v1.11.3+
+- Kubernetes v1.11.3+ cluster
+- go version v1.24.6+ (for local development)
 
-## Quick Install (for users)
-To get started, install the `ObservabilityGateway` Custom Resource Definition (CRD) and the Operator that manages it.
-1. Install the CRD
+### Step 1: Install the Custom Resource Definition
+The CRD must be installed before creating any `ObservabilityGateway` resources:
+```bash
+kubectl apply -f https://raw.githubusercontent.com/Observability-System/Observability-Gateway-Operator/main/config/crd/bases/observability.x-k8s.io_observabilitygateways.yaml
+```
 
-    This registers the `ObservabilityGateway` resource type in your cluster:
-    ```bash
-    kubectl apply -f https://raw.githubusercontent.com/Observability-System/Observability-Gateway-Operator/main/config/crd/bases/observability.x-k8s.io_observabilitygateways.yaml
-    ```
+Verify:
+```bash
+kubectl get crds | grep observabilitygateways
+```
 
-2. Install the Operator
+### Step 2: Deploy the Operator
+Deploy the operator using the default kustomize configuration:
+```bash
+kubectl apply -k https://github.com/Observability-System/Observability-Gateway-Operator/config/default
+```
+This installs:
+- the controller Deployment
+- required RBAC resources
+- the namespace `observability-system`.
 
-    This deploys the controller that reconciles `ObservabilityGateway` resources:
-    ```bash
-    kubectl apply -k https://github.com/Observability-System/Observability-Gateway-Operator/config/default
-    ```
-
-3. Verify the installation
-
-    Once applied, confirm that the operator is running:
-    ```bash
-    kubectl get pods -n observability-system
-    ```
-    You should see the controller pod in a Running state.
+Verify:
+```bash
+kubectl get pods -A | grep observability-gateway
+```
 
 ## Usage
-To deploy an `ObservabilityGateway`, start by creating a dedicated namespace for your ingestion components:
+### Step 1: Create a Namespace
 ```bash
 kubectl create namespace observability
 ```
 
-Next, apply the shared OpenTelemetry configuration that will be referenced by your gateway and its collectors:
+### Step 2: Apply Shared Configuration
+Create or apply a ConfigMap containing OpenTelemetry configuration:
 ```bash
-kubectl apply -f https://raw.githubusercontent.com/alexandrosst/observability-gateway-operator/v0.1.1/examples/otel-configmap.yaml
+kubectl apply -f examples/otel-configmap.yaml
+```
+Ensure the name matches the one referenced in the custom resource.
+
+### Step 3: Create a Gateway Resource
+```bash
+kubectl apply -f examples/gateway.yaml
 ```
 
-Finally, deploy your multi-class ObservabilityGateway resource. This will trigger the operator to provision the appropriate collectors and routing logic based on your declarative spec:
-```bash
-kubectl apply -f https://raw.githubusercontent.com/alexandrosst/observability-gateway-operator/v0.1.1/examples/gateway.yaml
-```
-
-To verify that the gateway and its collectors have been created successfully, you can inspect the deployments and services in the namespace:
+### Step 4: Verify Managed Resources
 ```bash
 kubectl get deployments,services -n observability
 ```
 
-As expected output, you should see:
+Expected output resembles:
 ```bash
-kubectl get deployments -n observability
-NAME                              READY   UP-TO-DATE   AVAILABLE   AGE
-prio-ingestion-gateway-gold       3/3     3            3           1m
-prio-ingestion-gateway-silver     2/2     2            2           1m
-prio-ingestion-gateway-bronze     1/1     1            1           1m
+prio-ingestion-gateway-gold     3/3
+prio-ingestion-gateway-silver   2/2
+prio-ingestion-gateway-bronze   1/1
 ```
+Each class is managed independently.
+
+## Build and Publish
+This project provides a Makefile with helper targets for building and publishing the operator container image. To see all supported Makefile targets:
 
 ```bash
-kubectl get services -n observability
-NAME                              TYPE        CLUSTER-IP      EXTERNAL-IP   PORT(S)                          AGE
-prio-ingestion-gateway-gold       ClusterIP   10.96.x.x       <none>        4317/TCP,4318/TCP,8888/TCP       1m
-prio-ingestion-gateway-silver     ClusterIP   10.96.y.y       <none>        4317/TCP,4318/TCP,8888/TCP       1m
-prio-ingestion-gateway-bronze     ClusterIP   10.96.z.z       <none>        4317/TCP,4318/TCP,8888/TCP       1m
+make help
 ```
+
+### Prerequisites
+- Docker with BuildKit support
+- docker `buildx` enabled
+- Access to a container registry
+
+### Build the Image Locally
+Build a single-architecture image and tag it locally:
+
+```bash
+make docker-build
+```
+
+### Push the Image
+Build and push a single-architecture image:
+
+```bash
+make docker-push
+```
+This target builds the image and pushes it to the configured registry.
+
+### Build and Push Multi-Architecture Image
+To build and push a multi-architecture image (linux/amd64, linux/arm64):
+
+```bash
+make docker-pushx
+```
+This uses Docker Buildx to publish a multi-platform manifest.
 
 ## Development
 1. Build & run locally (great for development):
