@@ -195,12 +195,17 @@ func (r *ObservabilityGatewayReconciler) reconcileService(ctx context.Context, g
 
 		servicePorts := make([]corev1.ServicePort, len(containerPorts))
 		for i, p := range containerPorts {
-			servicePorts[i] = corev1.ServicePort{
+			sp := corev1.ServicePort{
 				Name:       p.Name,
 				Port:       p.ContainerPort,
 				Protocol:   p.Protocol,
 				TargetPort: intstr.FromInt(int(p.ContainerPort)),
 			}
+			if p.Name == "otlp-grpc" {
+				proto := "grpc"
+				sp.AppProtocol = &proto
+			}
+			servicePorts[i] = sp
 		}
 
 		svc.Spec = corev1.ServiceSpec{
