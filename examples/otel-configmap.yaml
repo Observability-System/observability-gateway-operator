@@ -32,10 +32,10 @@ data:
         timeout: 10s
 
     exporters:
-      debug:                                   # Prints telemetry to console (good for testing)
-        verbosity: detailed                    # detailed | normal | basic
-        sampling_initial: 5                    # Print first 5 items
-        sampling_thereafter: 200               # Then every 200th
+      otlp:
+        endpoint: ${env:GATEWAY_CLASS}-backend.observability.svc.cluster.local:4317
+        tls:
+          insecure: true
 
     service:
       telemetry:
@@ -53,4 +53,4 @@ data:
         metrics:                               # Main pipeline (metrics)
           receivers: [otlp]
           processors: [weightedqueue, batch]
-          exporters: [debug]
+          exporters: [otlp]

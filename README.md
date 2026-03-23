@@ -77,10 +77,15 @@ kubectl apply -f examples/otel-configmap.yaml
 ```
 Ensure the name matches the one referenced in the custom resource.
 
+The shared config can still route each class to a different backend by using environment variable substitution:
+`endpoint: ${env:GATEWAY_CLASS}-backend.observability.svc.cluster.local:4317`
+
 ### Step 3: Create a Gateway Resource
 ```bash
-kubectl apply -f examples/gateway.yaml
+kubectl apply -f examples/observability-gateway.yaml
 ```
+
+The operator injects the class name as `GATEWAY_CLASS` in each class Deployment, so one shared config can resolve a class-specific backend endpoint.
 
 ### Step 4: Verify Managed Resources
 ```bash

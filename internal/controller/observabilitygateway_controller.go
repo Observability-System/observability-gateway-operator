@@ -105,6 +105,11 @@ func (r *ObservabilityGatewayReconciler) reconcileDeployment(ctx context.Context
 			affinity = class.Affinity.DeepCopy()
 		}
 
+		envVars := []corev1.EnvVar{{
+			Name:  "GATEWAY_CLASS",
+			Value: class.Name,
+		}}
+
 		dep.Spec = appsv1.DeploymentSpec{
 			Replicas: &class.Replicas,
 			Selector: &metav1.LabelSelector{
@@ -126,6 +131,7 @@ func (r *ObservabilityGatewayReconciler) reconcileDeployment(ctx context.Context
 							Name:  "otel-collector",
 							Image: gw.Spec.Image,
 							Args:  append(append([]string{"--config=/etc/otel/config.yaml"}, gw.Spec.ExtraArgs...), class.ExtraArgs...),
+							Env:   envVars,
 							Ports: ports,
 							VolumeMounts: []corev1.VolumeMount{
 								{Name: "otel-config", MountPath: "/etc/otel"},
